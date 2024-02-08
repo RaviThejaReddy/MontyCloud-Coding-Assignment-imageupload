@@ -29,10 +29,13 @@ LocalStack, refer to the below articles:
 
 # how to use this code
 to install localstack -> install docker as a prerequirements
-pip3 install --upgrade localstack
+```pip3 install --upgrade localstack```
+
+run below command to start the localstack
+```sh start_local_stack.sh```
 
 to deploy stack run below command
-sh delpoy_stack.sh
+```sh delpoy_stack.sh```
 
 
 import it and use it to make calls
