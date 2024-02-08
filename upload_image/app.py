@@ -18,7 +18,7 @@ def handler(event, context):
         s3.put_object(
             Bucket=os.environ['IMAGE_S3_BUCKET_NAME'],
             Key=image_key,
-            Body=unquote_plus(event['body']['file']),
+            Body=unquote_plus(json.loads(event['body'])['file']),
             ContentEncoding='base64',
             ContentType='image/jpeg'
         )

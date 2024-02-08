@@ -89,7 +89,7 @@ Resources:
       Description: Uploads image to s3 and saves metadata to dynamodb
       FunctionName: upload_image
       Tracing: Active
-      CodeUri: s3://localstack-resources-bucket/imageupload/22f10ce014571fdf1e8bacee395331a4
+      CodeUri: s3://localstack-resources-bucket/imageupload/83047114f0e32d820e2bf7293f3a7542
       Events:
         UploadImageAPI:
           Type: Api
