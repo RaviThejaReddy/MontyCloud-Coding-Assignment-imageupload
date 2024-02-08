@@ -1,0 +1,8 @@
+version: '3'
+services:
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4566-4599:4566-4599"
+    environment:
+      - DEFAULT_REGION=us-east-1

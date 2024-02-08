@@ -1,0 +1,141 @@
+openapi: 3.0.2
+info:
+  title: Image Storage Apis
+  version: "1.0"
+
+servers:
+  - url: https://${ImageStorageAPI}.execute-api.${AWS::Region}.amazonaws.com/{basePath}
+    variables:
+      basePath:
+        default: v1
+
+paths:
+  /image/upload:
+    post:
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                metadata:
+                  type: object
+                  properties:
+                    username:
+                      type: string
+                    filename:
+                      type: string
+      responses:
+        '200':
+          description: Successful upload
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+      x-amazon-apigateway-request-validator: "all"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        passthroughBehavior: when_no_match
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UploadImageFunction.Arn}/invocations
+  /images/list:
+    get:
+      responses:
+        '200':
+          description: Successful retrieval of image list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    image_id:
+                      type: string
+                      description: The ID of the image
+                    filename:
+                      type: string
+                    username:
+                      type: string
+                    s3Url:
+                      type: string
+                      format: uri
+                      description: The URL or path to the image
+        '500':
+          description: Internal Server Error
+      x-amazon-apigateway-request-validator: "all"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        passthroughBehavior: when_no_match
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListImagesFunction.Arn}/invocations
+  /image/{image_id}:
+    get:
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          description: The ID of the image to download
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Image not found
+      x-amazon-apigateway-request-validator: "all"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        passthroughBehavior: when_no_match
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DownloadImageFunction.Arn}/invocations
+    delete:
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          description: The ID of the image to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Image successfully deleted
+        '404':
+          description: Image not found
+      x-amazon-apigateway-request-validator: "all"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        passthroughBehavior: when_no_match
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteImageFunction.Arn}/invocations
+
+x-amazon-apigateway-request-validators:
+  all:
+    validateRequestParameters: true
+    validateRequestBody: true
+    validateRequestHeaders: true
+x-amazon-apigateway-gateway-responses:
+  BAD_REQUEST_BODY:
+    responseTemplates:
+      application/json: '{"errorCode": "BadRequestBody", "message": "$context.error.validationErrorString"}'
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+  DEFAULT_4XX:
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+  DEFAULT_5XX:
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"

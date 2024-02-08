@@ -1,0 +1,176 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+
+Globals:
+  Function:
+    Runtime: python3.9
+    Handler: app.handler
+    MemorySize: 256
+    Timeout: 180
+    # Layers:
+    #   - !Ref CustomLambdaLayer
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        IMAGE_S3_BUCKET_NAME: !Ref ImageS3Bucket
+        IMAGE_METADATA_TABLE_NAME: !Ref ImageMetadataTable
+        LOCAL_STACK_ENDPOINT_URL: "http://localhost.localstack.cloud:4566"
+
+Resources:
+  ImageS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub image-storage-bucket-${Environment}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Status: Enabled
+            ExpirationInDays: 5
+      Tags:
+        - Key: Company
+          Value: MontyCloud
+        - Key: Purpose
+          Value: Assignment
+
+  ImageMetadataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub image_metadata_table_${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: image_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: image_id
+          KeyType: HASH
+
+  ImageStorageAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      EndpointConfiguration:
+        Type: REGIONAL
+      Tags:
+        Company: MontyCloud
+        Purpose: Assignment
+      TracingEnabled: true
+      MethodSettings:
+        - LoggingLevel: INFO
+          ResourcePath: /*
+          HttpMethod: '*'
+          MetricsEnabled: true
+          DataTraceEnabled: true
+      Name: ImageStorageApiGateway
+      OpenApiVersion: 3.0.2
+      StageName: v1
+      Cors:
+        AllowOrigin: '''*'''
+        AllowHeaders: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key'''
+      DefinitionBody: !Transform
+        Name: AWS::Include
+        Parameters:
+          Location: ./openapi.yaml
+
+  UploadImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: "Uploads image to s3 and saves metadata to dynamodb"
+      FunctionName: upload_image
+      Tracing: Active
+      CodeUri: ./upload_image
+      Events:
+        UploadImageAPI:
+          Type: Api
+          Properties:
+            Path: /image/upload
+            Method: post
+            RestApiId: !Ref ImageStorageAPI
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: "*"
+              Resource: "*" 
+      Tags:
+        Company: MontyCloud
+        Purpose: Assignment
+
+  ListImagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: "list images from dynamodb"
+      FunctionName: list_images
+      Tracing: Active
+      CodeUri: ./list_images
+      Events:
+        ListImagesAPI:
+          Type: Api
+          Properties:
+            Path: /images/list
+            Method: get
+            RestApiId: !Ref ImageStorageAPI
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: "*"
+              Resource: "*" 
+      Tags:
+        Company: MontyCloud
+        Purpose: Assignment
+
+  DeleteImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: "delete image from s3 and dynamodb"
+      FunctionName: delete_image
+      Tracing: Active
+      CodeUri: ./delete_image
+      Events:
+        DeleteImageAPI:
+          Type: Api
+          Properties:
+            Path: /image/{image_id}
+            Method: delete
+            RestApiId: !Ref ImageStorageAPI
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: "*"
+              Resource: "*" 
+      Tags:
+        Company: MontyCloud
+        Purpose: Assignment
+
+  DownloadImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: "Download image from s3 based on image id"
+      FunctionName: download_image
+      Tracing: Active
+      CodeUri: ./download_image
+      Events:
+        DownloadImageAPI:
+          Type: Api
+          Properties:
+            Path: /image/{image_id}
+            Method: get
+            RestApiId: !Ref ImageStorageAPI
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: "*"
+              Resource: "*" 
+      Tags:
+        Company: MontyCloud
+        Purpose: Assignment

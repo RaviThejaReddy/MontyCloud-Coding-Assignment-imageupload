@@ -1,0 +1,1 @@
+aws apigateway get-export --profile localstack --parameters extensions='apigateway' --rest-api-id rhu24bumge --stage-name v1 --export-type oas30 oasTest.json --d 
