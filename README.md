@@ -25,3 +25,15 @@ LocalStack, refer to the below articles:
 • How to use LocalStack with Docker compose
 • How to use AWS CLI with LocalStack
 • What is LocalStack?
+
+
+# how to use this code
+to install localstack -> install docker as a prerequirements
+pip3 install --upgrade localstack
+
+to deploy stack run below command
+sh delpoy_stack.sh
+
+
+import it and use it to make calls
+get rest-api-id from localstack and update it in postman collection  -> ImageStorageApiGateway.postman_collection.json
